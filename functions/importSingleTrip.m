@@ -1,5 +1,4 @@
 function [trip_dataset] = importSingleTrip(filename, startRow, endRow)
-%IMPORTDRIVENTRIP Summary of this function goes here
 %importDrivenTrip Import numeric data from a text file as column vectors.
 %   [X,Y] = IMPORTFILE1(FILENAME) Reads data from text file FILENAME for
 %   the default selection.
