@@ -18,6 +18,10 @@ implementing ideas which where release after the competition had ended.
   coordinates $(X,Y)$ of a trip, rotate them with regard to the centroid
   mean, and calculate measurements with respect to the time dimension,
   such as: speed, acceleration, distance, and orientation at each sec 
+* functions/getSpatialMeasurements - this function takes the Cartesian
+  coordinates $(X,Y)$ of a trip, simplified it by removing the time 
+  dimension utilizing RDP (Ramer–Douglas–Peucker), and making coordinates
+  pairs of equally spaced length.
 * unittests/test_all.m - run all unit tests
 
 [AXA]: https://www.kaggle.com/c/axa-driver-telematics-analysis 
