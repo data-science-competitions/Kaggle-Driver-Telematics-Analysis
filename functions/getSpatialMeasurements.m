@@ -6,8 +6,6 @@ function [new_trip_structure] = getSpatialMeasurements(trip_structure,step_size,
 %   step_size; length of each trip steps [meters]
 %   shingle_size; 
 %   verbose; Logical to show process in command window
-%   OUTPUT:
-%
 %
 if (~exist('verbose','var')) verbose=false; end
 if (verbose) fprintf('\n%% Get spatial measurements'); end

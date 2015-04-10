@@ -4,11 +4,10 @@
 % Algorithm pipeline:
 %
 % # Simplify trips using RDP (Ramer–Douglas–Peucker)
-% # Divide the trip to equally steps intervals  
+% # Divide the trip to equally steps intervals
 % # Represent trips as sets using k-shingles
 % # Find similar trips in the corpus
 %
-
 
 
 %% Initialization
@@ -22,13 +21,14 @@ load('data/sampled_dataset.mat')
 
 %% Step 1: Simplify trips using RDP
 %
-t=46; % trip number \in {1,2,...,200}
+t=84; % trip number \in {1,2,...,200}
 X = single(positive_sample.Dataset{1,t}(:,'X'));
 Y = single(positive_sample.Dataset{1,t}(:,'Y'));
 
 PointList_reduced = RDPKernel([X,Y], 'AUTO', verbose);
+title('Simplify trips using RDP')
 X_re = PointList_reduced(:,1);
-Y_re = PointList_reduced(:,2); 
+Y_re = PointList_reduced(:,2);
 
 %% Step 2: Trip interpolation
 % We divide the trip to have equally steps intervals utilizing linear
@@ -43,7 +43,7 @@ P = interparc(linspace(0,1,ceil(total_length/step_size)),X_re,Y_re,'linear');
 X_step = P(:,1);
 Y_step = P(:,2);
 plot(X,Y,X_step,Y_step,'ro'), axis square
-
+title('Trip interpolation')
 %% Step 3: Represent trips as sets using k-shingles
 % Define a k-shingle for a trip to be any successive points with lag k
 % found within the trip. Then, we may associate with each trip the set of
@@ -57,23 +57,88 @@ plot(X,Y,X_step,Y_step,'ro'), axis square
 % 3.2. Choosing the shingle Size
 % We can pick k to be any constant we like. However, if we pick k too
 % small, then we would expect most sequences of k angles to appear in
-% most trips. Picking shingle size to be k, then there would be b^k 
+% most trips. Picking shingle size to be k, then there would be b^k
 % possible shingles. If the typical trip is much smaller than b^k we would
 % expect k to work well. However, the calculation is a bit more subtle.
 % Suppose we have b different angles, not all angles appear with equal
-% probability. Zeros dominate, while obtuse and reflex angles are rare. 
+% probability. Zeros dominate, while obtuse and reflex angles are rare.
 %
 step_size = 50; % In meters
-shingle_size = 10; % shingle size
+shingle_size = 12; % diff lag size
+NumBind = 80; % Number of angles tokens
+UseSignedOrientation = false; % Selection of orientation values
 X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
 X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
+F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
+F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
 
-b = 8;  % number of angles bins
+%% Step 4: Grid search for trip matching parameters
+%
+step_size = 50; % In meters
+m = 10; % Number of differend angle token sizes
+n = 20; % Number of differend shingle sizes
+UseSignedOrientation = false; % Selection of orientation values
+shingle_size = ceil(linspace(1,20,n)); % diff lag size
+NumBind = ceil(linspace(10,100,m));
+AUC_Mean = []; AUC_Var =[];
 
+figure
+startTime=datetime;
+for p=1:n
+    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(p),verbose);
+    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(p),verbose);
+    for l=1:m
+        display('%% -------------------------------------------- %%')
+        display(['%% Grid Search: shingle_size:',num2str(p),'/',num2str(n),...
+            ' NumBind:',num2str(l),'/',num2str(m)])
+        display('%% -------------------------------------------- %%')
+        F_N = bindShingles(X_N,NumBind(l),UseSignedOrientation);
+        F_P = bindShingles(X_P,NumBind(l),UseSignedOrientation);
+        Nneg = size(F_N,1);
+        Npos = size(F_P,1);
+        X = [F_N;F_P];
+        labels = [zeros(Nneg,1);ones(Npos,1)];
+        rng(2015); % Set seed number
+        [AUC_Mean(l,p),AUC_Var(l,p)] = cvModel(X,labels,5,verbose); % Evaluate Model
+        clear F_N F_P X
+    end
+    display('%% Estimated time to finish: ')
+    disp((n*m-((p-1)*m+l))*(datetime-startTime)/((p-1)*m+l))
+end
 
+figure
+colormap('hot');   % set colormap
+imagesc(AUC_Mean)
+set(gca,...
+    'YTick', 1:m, 'YTickLabel', NumBind,...
+    'XTick', 1:n, 'XTickLabel', shingle_size)
+ylabel('Number of differend angle token sizes')
+xlabel('Number of differend shingle sizes')
 
+%% Step 5: SVD
+%
+step_size = 50; % In meters
+shingle_size = 12; % diff lag size
+NumBind = 80; % Number of angles tokens
+UseSignedOrientation = false; % Selection of orientation values
+X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
+X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
+F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
+F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
+Nneg = size(F_N,1);
+Npos = size(F_P,1);
+X = [F_N;F_P];
+[U,S,V] = svd(X,'econ')
+labels = [zeros(Nneg,1);ones(Npos,1)];
+AUC_Mean = []; AUC_Var =[];
 
+for k=1:NumBind-1
+    display('%% -------------------------------------------- %%')
+    display(['%% SVD: ',num2str(k),' eigenvector from ',num2str(NumBind-1)])
+    display('%% -------------------------------------------- %%')
+    rng(2015); % Set seed number
+    [AUC_Mean(k),AUC_Var(k)] = cvModel(X(:,1:k),labels,5,verbose);
+end
 
-
-
-
+figure
+plot(1:NumBind-1,AUC_Mean)
