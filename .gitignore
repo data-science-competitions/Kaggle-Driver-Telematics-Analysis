@@ -1,2 +1,4 @@
 data/sampled_dataset.mat
 *.asv
+parfor_progress.txt
+submission/

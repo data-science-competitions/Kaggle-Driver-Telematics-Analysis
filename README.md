@@ -22,6 +22,8 @@ implementing ideas which where release after the competition had ended.
   coordinates $(X,Y)$ of a trip, simplified it by removing the time 
   dimension utilizing RDP (Ramer–Douglas–Peucker), and making coordinates
   pairs of equally spaced length.
+* scripts/preprocess_the_dataset split the 547,200 `csv` files into N 
+  `mat` files on disk for further analysis.
 * unittests/test_all.m - run all unit tests
 
 [AXA]: https://www.kaggle.com/c/axa-driver-telematics-analysis 

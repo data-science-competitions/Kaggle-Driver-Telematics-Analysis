@@ -71,18 +71,21 @@ X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
 X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
 F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
 F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
+X = [F_N;F_P];
+% TF-IDF Weighting
+W = (sum(X,1)/sum(sum(X,1))).^-1;
+X = X.*repmat(W,400,1);
 
 %% Step 4: Grid search for trip matching parameters
 %
 step_size = 50; % In meters
 m = 10; % Number of differend angle token sizes
-n = 20; % Number of differend shingle sizes
+n = 10; % Number of differend shingle sizes
 UseSignedOrientation = false; % Selection of orientation values
 shingle_size = ceil(linspace(1,20,n)); % diff lag size
 NumBind = ceil(linspace(10,100,m));
 AUC_Mean = []; AUC_Var =[];
 
-figure
 startTime=datetime;
 for p=1:n
     X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(p),verbose);
@@ -97,6 +100,9 @@ for p=1:n
         Nneg = size(F_N,1);
         Npos = size(F_P,1);
         X = [F_N;F_P];
+        % TF-IDF Weighting
+        W = (sum(X,1)/sum(sum(X,1))).^-1;
+        X = X.*repmat(W,400,1);
         labels = [zeros(Nneg,1);ones(Npos,1)];
         rng(2015); % Set seed number
         [AUC_Mean(l,p),AUC_Var(l,p)] = cvModel(X,labels,5,verbose); % Evaluate Model

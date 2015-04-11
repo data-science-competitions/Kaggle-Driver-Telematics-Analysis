@@ -15,27 +15,20 @@ for k = 1:K
     % 1.1. Get the original X,Y coordinates
     X = single(trip_structure.Dataset{1,k}(:,{'X'}));
     Y = single(trip_structure.Dataset{1,k}(:,{'Y'}));
-    % 1.2. Polar coordinate system
-    rho = sqrt(X.*X+Y.*Y);
-    theta = atan2(Y,X);
     % 1.3. Rotate the trajectories with respect to the centroid mean
     X_c = (1/length(X))*sum(X);
     Y_c = (1/length(Y))*sum(Y);
-    theta_c = atan2(Y_c,X_c);
-    theta = theta-theta_c;
-    X = rho.*cos(theta);
-    Y = rho.*sin(theta);
-    % 1.4. Calculate theta gradient
-%     dtheta = [0;diff(theta)];    
-    % 1.5. Angle between pair of successive points
+    X = X-X_c;
+    Y = Y-Y_c;  
+    % 1.4. Angle between pair of successive points
     Angle = [0;atan2(diff(Y),diff(X))];
-    % 1.6. Calculate trip speed [m/s]
+    % 1.5. Calculate trip speed [m/s]
     Speed = [0;sqrt(diff(X).^2+diff(Y).^2)];
-    % 1.7. Calculate trip acceleration [m/s^2]
+    % 1.6. Calculate trip acceleration [m/s^2]
     Acceleration = [0;diff(Speed)];
-    % 1.8. Calculate trip distance [m]
+    % 1.7. Calculate trip distance [m]
     Distance = cumsum(Speed);
-    % 1.9. Distance between pair of successive points
+    % 1.8. Distance between pair of successive points
 %     dDistance = [0;diff(Distance)];
     % ------------------------------------------------------------------- %
     % 3. Store results
