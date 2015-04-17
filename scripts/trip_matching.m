@@ -86,31 +86,27 @@ shingle_size = ceil(linspace(1,20,n)); % diff lag size
 NumBind = ceil(linspace(10,100,m));
 AUC_Mean = []; AUC_Var =[];
 
-startTime=datetime;
+parfor_progress(n); % Initialize progress monitor
 for p=1:n
-    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(p),verbose);
-    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(p),verbose);
+    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(p),false);
+    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(p),false);
     for l=1:m
-        display('%% -------------------------------------------- %%')
-        display(['%% Grid Search: shingle_size:',num2str(p),'/',num2str(n),...
-            ' NumBind:',num2str(l),'/',num2str(m)])
-        display('%% -------------------------------------------- %%')
         F_N = bindShingles(X_N,NumBind(l),UseSignedOrientation);
         F_P = bindShingles(X_P,NumBind(l),UseSignedOrientation);
         Nneg = size(F_N,1);
         Npos = size(F_P,1);
         X = [F_N;F_P];
         % TF-IDF Weighting
-        W = (sum(X,1)/sum(sum(X,1))).^-1;
-        X = X.*repmat(W,400,1);
+%         W = (sum(X,1)/sum(sum(X,1))).^-1;
+%         X = X.*repmat(W,400,1);
         labels = [zeros(Nneg,1);ones(Npos,1)];
         rng(2015); % Set seed number
-        [AUC_Mean(l,p),AUC_Var(l,p)] = cvModel(X,labels,5,verbose); % Evaluate Model
+        [AUC_Mean(l,p),AUC_Var(l,p)] = cvModel(X,labels,5,false); % Evaluate Model
         clear F_N F_P X
     end
-    display('%% Estimated time to finish: ')
-    disp((n*m-((p-1)*m+l))*(datetime-startTime)/((p-1)*m+l))
+    parfor_progress;
 end
+parfor_progress(0); % Clean up progress monitor
 
 figure
 colormap('hot');   % set colormap
@@ -138,13 +134,13 @@ X = [F_N;F_P];
 labels = [zeros(Nneg,1);ones(Npos,1)];
 AUC_Mean = []; AUC_Var =[];
 
-for k=1:NumBind-1
-    display('%% -------------------------------------------- %%')
-    display(['%% SVD: ',num2str(k),' eigenvector from ',num2str(NumBind-1)])
-    display('%% -------------------------------------------- %%')
+parfor_progress(NumBind-1); % Initialize progress monitor
+for k=NumBind-1:-1:1
     rng(2015); % Set seed number
-    [AUC_Mean(k),AUC_Var(k)] = cvModel(X(:,1:k),labels,5,verbose);
+    [AUC_Mean(k),AUC_Var(k)] = cvModel(X(:,1:k),labels,5,false);
+    parfor_progress;
 end
+parfor_progress(0); % Clean up progress monitor
 
 figure
-plot(1:NumBind-1,AUC_Mean)
+plot(NumBind-1:-1:1,AUC_Mean)

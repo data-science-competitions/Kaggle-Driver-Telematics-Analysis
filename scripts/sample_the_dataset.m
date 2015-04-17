@@ -8,7 +8,7 @@
 %
 % For local evaluation purposes, we sample one arbitrary trip from each
 % batch (a total of 2736 trips) and assign them as negative class.
-% In addition, we take one arbitrary batch (in this case the 10th batch) 
+% In addition, we take one arbitrary batch (in this case the 10th batch)
 % and assign all the trips within it as positive class.
 %
 
@@ -19,9 +19,15 @@ slCharacterEncoding('ISO-8859-1')
 verbose = true;
 %%%
 % Get all folder paths (2736)
-dirName = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis';
+dirName = 'D:/Driver-Telematics-Analysis';
+% dirName = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis';
 fileList = getAllFiles(dirName,verbose);
 K = length(fileList);
+% Trip matching parmeters
+step_size = 50; % In meters
+shingle_size = 12; % diff lag size
+NumBind = 80; % Number of angles tokens
+
 %%%
 % Example: Read an arbitrary trip using importSingleTrip
 %
@@ -37,18 +43,32 @@ K = length(fileList);
 %%%
 % *Positive dataset*:
 % Choose the driver of intersts. Specifiy a number in the range: [1,2736]
-doi = 1;
+doi = 5;
 psfl = fileList((doi-1)*200+1:doi*200);
 positive_sample = importTripsFromFileList(psfl,verbose);
+% Get telematic measurements
+X1 = getTelematicMeasurements(positive_sample,verbose);
+% Get spatial measurements
+X2 = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
+% Combine measurements
+positive_sample = X1;
+positive_sample.Spatial = X2.Dataset;
 %%%
 % *Negative dataset*:
 % Choose how many irelevent trips to assigned for the *negative data set*.
 % Specifiy a number in the range: [200,2736]. Use 200 for balanced classes.
-itta = 200; 
+itta = 200;
 n1 = randperm(200,1);
 n2 = 200*2736-randperm(200,1);
 nsfl = fileList(round(linspace(n1,n2,itta)));
 negative_sample = importTripsFromFileList(nsfl,verbose);
+% Get telematic measurements
+X1 = getTelematicMeasurements(negative_sample,verbose);
+% Get spatial measurements
+X2 = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
+% Combine measurements
+negative_sample = X1;
+negative_sample.Spatial = X2.Dataset;
 
 %% Save files to data folder
 %

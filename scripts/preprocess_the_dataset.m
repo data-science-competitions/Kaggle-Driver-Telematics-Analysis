@@ -10,11 +10,16 @@
 clear all, clc, close all, format bank, rng(2015)%, warning('off','all')
 slCharacterEncoding('ISO-8859-1')
 verbose = true;
-
-sourcePath = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis';
-destPath   = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis-Processed';
+sourcePath = 'D:/Driver-Telematics-Analysis';
+destPath   = 'D:/Driver-Telematics-Analysis-Processed';
+% sourcePath = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis';
+% destPath   = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis-Processed';
 if(exist(destPath,'dir')==0) mkdir(destPath); end
 Nparts = 50;
+% Trip matching parmeters
+step_size = 50; % In meters
+shingle_size = 12; % diff lag size
+NumBind = 80; % Number of angles tokens
 
 %% Data Pre-Preocessing
 % Open parallel pool
@@ -33,20 +38,25 @@ K = length(fileList);
 
 % Set parts indices
 inPart = round(linspace(1,K/200,Nparts+1));
-unique(inPart)
+
 % Process the data in parts
-parfor_progress(Nparts); % Initialize progress monitor  
-cnt = 0;
-for k=1:Nparts
+parfor_progress(Nparts); % Initialize progress monitor
+
+parfor k=1:Nparts
     % Import data set to main memory
     partial_fileList = fileList(((inPart(k)-1)*200+1):inPart(k+1)*200);
     trips_structure = importTripsFromFileList(partial_fileList,false);
-    cnt(k) = length(partial_fileList);
+    % Get telematic measurements
+    X1 = getTelematicMeasurements(trips_structure,false);
+    % Get spatial measurements
+    X2 = getSpatialMeasurements(trips_structure,step_size,shingle_size);
+    % Combine measurements
+    trips_structure = X1;
+    trips_structure.Spatial = X2.Dataset;
     % Save the processed part on the hard drive
     save_for_parfor([destPath,'/','part_',num2str(k),'.mat'],trips_structure)
     parfor_progress;
 end
-display([num2str(sum(cnt)),' trips were splitted'])
 parfor_progress(0); % Clean up progress monitor
 delete(gcp)
 
