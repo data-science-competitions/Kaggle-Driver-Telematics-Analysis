@@ -12,7 +12,7 @@
 % and assign all the trips within it as positive class.
 %
 
-%%
+%% Initialization
 %
 clear all, clc, close all, format bank, rng(2015)
 slCharacterEncoding('ISO-8859-1')

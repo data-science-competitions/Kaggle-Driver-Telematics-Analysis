@@ -13,25 +13,38 @@ verbose = true;
 % Load the sampled dataset created in **sample_the_dataset.m**
 load('data/sampled_dataset.mat')
 
+% HoG arguments
+scale_feature = false;
+
 %% Extract features form the arbitrary data set (negative examples)
 %
 X_N = getTelematicMeasurements(negative_sample,verbose);
-F_N = extractSpeedQuantiles(X_N,20,verbose); % 20 speed quantiles
+F_N1 = extractSpeedQuantiles(X_N,20,verbose); % 20 speed quantiles
+F_N2 = extractHoGFeatures(X_N,16,false,scale_feature,true);
 
 %% Extract features form the driver of interest trips' batch (positive examples)
 %
 X_P = getTelematicMeasurements(positive_sample,verbose);
-F_P = extractSpeedQuantiles(X_P,20,verbose); % 20 speed quantiles
+F_P1 = extractSpeedQuantiles(X_P,20,verbose); % 20 speed quantiles
+F_P2 = extractHoGFeatures(X_P,16,false,scale_feature,true);
+
+%% Weighting Factor
+%
+F1 = [F_P1;F_N1];
+F2 = [F_P2;F_N2];
+% F2 = transpose(tfidf2(F2'));
 
 %% Setup K-fold cross validation
 %
 K=10; % Number of folds
 
-X = [F_N;F_P];
-Nneg = size(F_N,1);
-Npos = size(F_P,1);
-labels = nominal([zeros(Nneg,1);ones(Npos,1)]);
+X = [F1,F2];
+Nneg = size(F_N1,1);
+Npos = size(F_P1,1);
+labels = nominal([ones(Npos,1);zeros(Nneg,1)]);
 
 rng(2015); % Set seed number
-[AUC_Mean,AUC_Var] = cvModel(X,labels,K,verbose); % Evaluate Model
-AUC_Mean,sqrt(AUC_Var)
+[AUC_mean,AUC_Per] = cvModel(X,labels,K,verbose); % Evaluate Model
+AUC_mean
+figure;
+boxplot(AUC_Per); refline(0,0.5); refline(0,1)

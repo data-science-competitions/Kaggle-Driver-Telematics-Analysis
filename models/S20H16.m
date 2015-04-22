@@ -1,10 +1,10 @@
-%% Submission - S20TM
+%% Submission - S20H16
 % author: Harel Lustiger
 %
 % This script is a submission for the competition, featuring:
 %
 % # QoG: 20 speed quantiles
-% # Trip Matching
+% # HoG: 16 bins angle histograms of distances
 
 %% Initialization
 %
@@ -34,8 +34,7 @@ load('data/sampled_dataset.mat')
 %%%
 X_N1 = negative_sample;
 F_N1 = extractSpeedQuantiles(X_N1,20,verbose); % 20 speed quantiles
-X_N2 = negative_sample; X_N2.Dataset = negative_sample.Spatial;
-F_N2 = bindShingles(X_N2,NumBind,UseSignedOrientation);
+F_N2 = extractHoGFeatures(X_N1,16,false,false,true);
 
 %% Build Model for Each Driver
 %
@@ -54,8 +53,7 @@ for k=1:nFileParts
         % 3. Feature Engineering
         X_P1 = batch_structure;
         F_P1 = extractSpeedQuantiles(X_P1,20,false); % 20 speed quantiles
-        X_P2 = batch_structure; X_P2.Dataset = batch_structure.Spatial;
-        F_P2 = bindShingles(X_P2,NumBind,UseSignedOrientation);
+        F_P2 = extractHoGFeatures(X_P1,16,false,false,false);
         % 4. Classification
         F_P = [F_P1,F_P2];
         F_N = [F_N1,F_N2];

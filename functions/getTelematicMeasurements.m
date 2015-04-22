@@ -18,8 +18,11 @@ for k = 1:K
     % 1.3. Rotate the trajectories with respect to the centroid mean
     X_c = (1/length(X))*sum(X);
     Y_c = (1/length(Y))*sum(Y);
-    X = X-X_c;
-    Y = Y-Y_c;  
+    phi = atan2(Y,X);
+    r   = sqrt(X.*X+Y.*Y);
+    phi_c = atan2(Y_c,X_c);
+    X = r.*cos(phi-phi_c);
+    Y = r.*sin(phi-phi_c);  
     % 1.4. Angle between pair of successive points
     Angle = [0;atan2(diff(Y),diff(X))];
     % 1.5. Calculate trip speed [m/s]

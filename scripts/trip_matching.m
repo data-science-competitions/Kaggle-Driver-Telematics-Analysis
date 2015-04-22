@@ -25,7 +25,7 @@ t=84; % trip number \in {1,2,...,200}
 X = single(positive_sample.Dataset{1,t}(:,'X'));
 Y = single(positive_sample.Dataset{1,t}(:,'Y'));
 
-PointList_reduced = RDPKernel([X,Y], 'AUTO', verbose);
+PointList_reduced = RDPKernel([X,Y], 'AUTO', verbose); axis square
 title('Simplify trips using RDP')
 X_re = PointList_reduced(:,1);
 Y_re = PointList_reduced(:,2);
@@ -73,35 +73,34 @@ F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
 F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
 X = [F_N;F_P];
 % TF-IDF Weighting
-W = (sum(X,1)/sum(sum(X,1))).^-1;
-X = X.*repmat(W,400,1);
+% X = transpose(tfidf2(X'));
 
 %% Step 4: Grid search for trip matching parameters
 %
 step_size = 50; % In meters
-m = 10; % Number of differend angle token sizes
-n = 10; % Number of differend shingle sizes
+M = 10; % Number of different angle token sizes
+N = 10; % Number of different shingle sizes
+K = 5; % Number of folds for CV
 UseSignedOrientation = false; % Selection of orientation values
-shingle_size = ceil(linspace(1,20,n)); % diff lag size
-NumBind = ceil(linspace(10,100,m));
-AUC_Mean = []; AUC_Var =[];
+shingle_size = ceil(linspace(5,50,N)); % diff lag size
+NumBind = ceil(linspace(10,100,M));
+AUC_Per = zeros(M,N,K);
 
-parfor_progress(n); % Initialize progress monitor
-for p=1:n
-    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(p),false);
-    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(p),false);
-    for l=1:m
-        F_N = bindShingles(X_N,NumBind(l),UseSignedOrientation);
-        F_P = bindShingles(X_P,NumBind(l),UseSignedOrientation);
-        Nneg = size(F_N,1);
+parfor_progress(N); % Initialize progress monitor
+for n=1:N
+    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(n),false);
+    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(n),false);
+    for m=1:M
+        F_P = bindShingles(X_P,NumBind(m),UseSignedOrientation);
+        F_N = bindShingles(X_N,NumBind(m),UseSignedOrientation);
         Npos = size(F_P,1);
-        X = [F_N;F_P];
+        Nneg = size(F_N,1);
+        X = [F_P;F_N];
         % TF-IDF Weighting
-%         W = (sum(X,1)/sum(sum(X,1))).^-1;
-%         X = X.*repmat(W,400,1);
-        labels = [zeros(Nneg,1);ones(Npos,1)];
+        % X = transpose(tfidf2(X'));
+        labels = [ones(Npos,1);zeros(Nneg,1)];
         rng(2015); % Set seed number
-        [AUC_Mean(l,p),AUC_Var(l,p)] = cvModel(X,labels,5,false); % Evaluate Model
+        [~,AUC_Per(m,n,1:K)] = cvModel(X,labels,K,false); % Evaluate Model
         clear F_N F_P X
     end
     parfor_progress;
@@ -110,37 +109,38 @@ parfor_progress(0); % Clean up progress monitor
 
 figure
 colormap('hot');   % set colormap
+AUC_Mean = mean(AUC_Per,3);
 imagesc(AUC_Mean)
 set(gca,...
-    'YTick', 1:m, 'YTickLabel', NumBind,...
-    'XTick', 1:n, 'XTickLabel', shingle_size)
+    'YTick', 1:M, 'YTickLabel', NumBind,...
+    'XTick', 1:N, 'XTickLabel', shingle_size)
 ylabel('Number of differend angle token sizes')
 xlabel('Number of differend shingle sizes')
 
-%% Step 5: SVD
-%
-step_size = 50; % In meters
-shingle_size = 12; % diff lag size
-NumBind = 80; % Number of angles tokens
-UseSignedOrientation = false; % Selection of orientation values
-X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
-X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
-F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
-F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
-Nneg = size(F_N,1);
-Npos = size(F_P,1);
-X = [F_N;F_P];
-[U,S,V] = svd(X,'econ')
-labels = [zeros(Nneg,1);ones(Npos,1)];
-AUC_Mean = []; AUC_Var =[];
-
-parfor_progress(NumBind-1); % Initialize progress monitor
-for k=NumBind-1:-1:1
-    rng(2015); % Set seed number
-    [AUC_Mean(k),AUC_Var(k)] = cvModel(X(:,1:k),labels,5,false);
-    parfor_progress;
-end
-parfor_progress(0); % Clean up progress monitor
-
-figure
-plot(NumBind-1:-1:1,AUC_Mean)
+% %% Step 5: SVD
+% %
+% step_size = 50; % In meters
+% shingle_size = 12; % diff lag size
+% NumBind = 80; % Number of angles tokens
+% UseSignedOrientation = false; % Selection of orientation values
+% X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
+% X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
+% F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
+% F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
+% Nneg = size(F_N,1);
+% Npos = size(F_P,1);
+% X = [F_N;F_P];
+% [U,S,V] = svd(X,'econ')
+% labels = [zeros(Nneg,1);ones(Npos,1)];
+% AUC_Mean = []; AUC_Var =[];
+% 
+% parfor_progress(NumBind-1); % Initialize progress monitor
+% for k=NumBind-1:-1:1
+%     rng(2015); % Set seed number
+%     [AUC_Mean(k),AUC_Var(k)] = cvModel(X(:,1:k),labels,5,false);
+%     parfor_progress;
+% end
+% parfor_progress(0); % Clean up progress monitor
+% 
+% figure
+% plot(NumBind-1:-1:1,AUC_Mean)
