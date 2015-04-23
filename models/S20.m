@@ -1,9 +1,9 @@
-%% Submission - 20S
+%% Submission - S20
 % author: Harel Lustiger
 %
 % This script is a submission for the competition, featuring:
 %
-% # QoG: 20 speed quantiles
+% # QoD: 20 speed quantiles
 %
 
 %% Initialization
@@ -15,6 +15,8 @@ verbose = true;
 sourcePath = 'D:/Driver-Telematics-Analysis-Processed';
 destFile   = ['./submission/submission_',date,'.csv'];
 if(exist('submission','dir')==0) mkdir('submission'); end
+% QoD arguments
+remove_zeros = false;
 
 fileList = getAllFiles(sourcePath,verbose);
 nFileParts = length(fileList);
@@ -32,8 +34,8 @@ end
 % Load the sampled dataset created in **sample_the_dataset.m**
 load('data/sampled_dataset.mat')
 %%%
-X_N1 = getTelematicMeasurements(negative_sample,verbose);
-F_N1 = extractSpeedQuantiles(X_N1,20,verbose); % 20 speed quantiles
+X_N = getTelematicMeasurements(negative_sample,verbose);
+F_N = extractQoDFeatures(X_N,{'Speed'},0,20,remove_zeros,verbose); % 20 speed quantiles
 
 %% Build Model for Each Driver
 %
@@ -50,11 +52,9 @@ for k=1:nFileParts
         batch_indices = find(batch_number(b)==cell2mat(trips_structure.Batch));
         batch_structure = structfun(@(v) v(batch_indices),trips_structure,'Uniform',0);
         % 3. Feature Engineering
-        X_P1 = getTelematicMeasurements(batch_structure);
-        F_P1 = extractSpeedQuantiles(X_P1,20); % 20 speed quantiles
+        X_P = getTelematicMeasurements(batch_structure);
+        F_P = extractQoDFeatures(X_P,{'Speed'},0,20,remove_zeros); % 20 speed quantiles
         % 4. Classification
-        F_P = [F_P1];
-        F_N = [F_N1];
         F = [F_P;F_N];
         lP = size(F_P,1);
         lN = size(F_N,1);
