@@ -21,13 +21,13 @@ scale_feature = false;
 %% Extract features form the arbitrary data set (negative examples)
 %
 X_N = getTelematicMeasurements(negative_sample,verbose);
-F_N1 = extractQoDFeatures(X_N,{'Speed','Acceleration'},0,20,remove_zeros,true); % 20 speed quantiles
+F_N1 = extractQoDFeatures(X_N,{'Distance','Speed','Acceleration'},[1,3],20,remove_zeros,true); % 20 speed quantiles
 F_N2 = extractHoGFeatures(X_N,16,false,scale_feature,true);
 
 %% Extract features form the driver of interest trips' batch (positive examples)
 %
 X_P = getTelematicMeasurements(positive_sample,verbose);
-F_P1 = extractQoDFeatures(X_P,{'Speed','Acceleration'},0,20,remove_zeros,true); % 20 speed quantiles
+F_P1 = extractQoDFeatures(X_P,{'Distance','Speed','Acceleration'},[1,3],20,remove_zeros,true); % 20 speed quantiles
 F_P2 = extractHoGFeatures(X_P,16,false,scale_feature,true);
 
 %% Weighting Factor

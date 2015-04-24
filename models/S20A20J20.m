@@ -1,10 +1,10 @@
-%% Submission - S20A20H16
+%% Submission - S20A20J20
 % author: Harel Lustiger
 %
 % This script is a submission for the competition, featuring:
 %
-% # QoD: 20 speed quantiles, 20 acceleration quantiles
-% # HoG: 16 bins angle histograms of distances
+% # QoD: 20 speed quantiles, 20 acceleration quantiles, 20 jerks quantiles
+%
 
 %% Initialization
 %
@@ -16,7 +16,7 @@ sourcePath = 'D:/Driver-Telematics-Analysis-Processed';
 destFile   = ['./submission/submission_',date,'.csv'];
 if(exist('submission','dir')==0) mkdir('submission'); end
 % QoD arguments
-remove_zeros = false;
+remove_zeros = true;
 
 fileList = getAllFiles(sourcePath,verbose);
 nFileParts = length(fileList);
@@ -34,9 +34,8 @@ end
 % Load the sampled dataset created in **sample_the_dataset.m**
 load('data/sampled_dataset.mat')
 %%%
-X_N = negative_sample;
-F_N1 = extractQoDFeatures(X_N,{'Speed','Acceleration'},0,20,remove_zeros,verbose);
-F_N2 = extractHoGFeatures(X_N,16,false,false,true);
+X_N = getTelematicMeasurements(negative_sample,verbose);
+F_N = extractQoDFeatures(X_N,{'Distance','Speed','Acceleration'},1,20,remove_zeros,verbose);
 
 %% Build Model for Each Driver
 %
@@ -53,12 +52,9 @@ for k=1:nFileParts
         batch_indices = find(batch_number(b)==cell2mat(trips_structure.Batch));
         batch_structure = structfun(@(v) v(batch_indices),trips_structure,'Uniform',0);
         % 3. Feature Engineering
-        X_P = batch_structure;
-        F_P1 = extractQoDFeatures(X_P,{'Speed','Acceleration'},0,20,remove_zeros);
-        F_P2 = extractHoGFeatures(X_P,16,false,false,false);
+        X_P = getTelematicMeasurements(batch_structure);
+        F_P = extractQoDFeatures(X_P,{'Distance','Speed','Acceleration'},1,20,remove_zeros);
         % 4. Classification
-        F_P = [F_P1,F_P2];
-        F_N = [F_N1,F_N2];
         F = [F_P;F_N];
         lP = size(F_P,1);
         lN = size(F_N,1);
@@ -74,7 +70,7 @@ for k=1:nFileParts
         scores = scores(:,2);
         partial_driver_trip{b} = batch_structure.ID';
         partial_prob{b} = scores(1:200);
-        partial_tnumber{b} = batch_structure.Number;
+        partial_tnumber{b} = batch_structure.Number; 
         partial_tbatch{b} = batch_structure.Batch;
         if(prod(size(partial_prob{b})==size(partial_driver_trip{b}))==0)
             error('Number of Probabilities ~= Number of trips')
@@ -117,4 +113,4 @@ delete(destFile)
 %
 parfor_progress(0); % Clean up progress monitor
 delete(gcp)
-
+% system('shutdown -s')

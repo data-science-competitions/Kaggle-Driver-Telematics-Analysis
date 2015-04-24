@@ -1,9 +1,12 @@
-%% Submission - S20A20
+%% Submission - S20A20J20L13
 % author: Harel Lustiger
 %
 % This script is a submission for the competition, featuring:
 %
-% # QoD: 20 speed quantiles, 20 acceleration quantiles
+% # QoD with 1 and 3 lags of:
+%     * 20 speed quantiles 
+%     * 20 acceleration quantiles
+%     * 20 jerks quantiles
 %
 
 %% Initialization
@@ -35,7 +38,7 @@ end
 load('data/sampled_dataset.mat')
 %%%
 X_N = getTelematicMeasurements(negative_sample,verbose);
-F_N = extractQoDFeatures(X_N,{'Speed','Acceleration'},0,20,remove_zeros,verbose);
+F_N = extractQoDFeatures(X_N,{'Distance','Speed','Acceleration'},[1,3],20,remove_zeros,verbose);
 
 %% Build Model for Each Driver
 %
@@ -53,7 +56,7 @@ for k=1:nFileParts
         batch_structure = structfun(@(v) v(batch_indices),trips_structure,'Uniform',0);
         % 3. Feature Engineering
         X_P = getTelematicMeasurements(batch_structure);
-        F_P = extractQoDFeatures(X_P,{'Speed','Acceleration'},0,20,remove_zeros);
+        F_P = extractQoDFeatures(X_P,{'Distance','Speed','Acceleration'},[1,3],20,remove_zeros);
         % 4. Classification
         F = [F_P;F_N];
         lP = size(F_P,1);

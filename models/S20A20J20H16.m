@@ -1,9 +1,9 @@
-%% Submission - S20A20H16
+%% Submission - S20A20J20H16
 % author: Harel Lustiger
 %
 % This script is a submission for the competition, featuring:
 %
-% # QoD: 20 speed quantiles, 20 acceleration quantiles
+% # QoD: 20 speed quantiles, 20 acceleration quantiles, 20 jerks quantiles
 % # HoG: 16 bins angle histograms of distances
 
 %% Initialization
@@ -35,7 +35,7 @@ end
 load('data/sampled_dataset.mat')
 %%%
 X_N = negative_sample;
-F_N1 = extractQoDFeatures(X_N,{'Speed','Acceleration'},0,20,remove_zeros,verbose);
+F_N1 = extractQoDFeatures(X_N,{'Distance','Speed','Acceleration'},1,20,remove_zeros,verbose);
 F_N2 = extractHoGFeatures(X_N,16,false,false,true);
 
 %% Build Model for Each Driver
@@ -54,7 +54,7 @@ for k=1:nFileParts
         batch_structure = structfun(@(v) v(batch_indices),trips_structure,'Uniform',0);
         % 3. Feature Engineering
         X_P = batch_structure;
-        F_P1 = extractQoDFeatures(X_P,{'Speed','Acceleration'},0,20,remove_zeros);
+        F_P1 = extractQoDFeatures(X_P,{'Distance','Speed','Acceleration'},1,20,remove_zeros);
         F_P2 = extractHoGFeatures(X_P,16,false,false,false);
         % 4. Classification
         F_P = [F_P1,F_P2];
