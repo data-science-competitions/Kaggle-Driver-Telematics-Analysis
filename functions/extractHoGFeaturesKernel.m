@@ -25,12 +25,12 @@ HoG_Labels = ones(length(theta),1);
 %
 if UseSignedOrientation
     theta = theta;
-    angleBins = linspace(-pi,pi,NumBind);
+    angleBins = linspace(-pi,pi,NumBind+1);
     HoG_Phase = linspace(-pi,pi,NumBind+1);
     HoG_Phase(1)=[];
 else
     theta = abs(theta);
-    angleBins = linspace(0,pi,NumBind);
+    angleBins = linspace(0,pi,NumBind+1);
     HoG_Phase = linspace(0,pi,NumBind+1);
     HoG_Phase(1)=[];
 end

@@ -1,4 +1,4 @@
-%% Trip Matching
+%% Trip Matching 2
 % author: Harel Lustiger
 %
 % Algorithm pipeline:
@@ -9,41 +9,37 @@
 % # Find similar trips in the corpus
 %
 
-
 %% Initialization
 %
-slCharacterEncoding('ISO-8859-1')
-clear all, clc, close all, format bank, rng(2015)
+clear all, clc, close all, format bank, rng(2015); slCharacterEncoding('ISO-8859-1')
 verbose = true;
-
 % Load the sampled dataset created in **sample_the_dataset.m**
 load('data/sampled_dataset.mat')
+interval = 20; % In meters
+stride = 5;
+NumBind = 80; % Number of angles tokens
 
-%% Step 1: Simplify trips using RDP
+%% Extract features form the arbitrary data set (negative examples)
 %
-t=84; % trip number \in {1,2,...,200}
-X = single(positive_sample.Dataset{1,t}(:,'X'));
-Y = single(positive_sample.Dataset{1,t}(:,'Y'));
+X_N = negative_sample;
+X_N.Dataset = X_N.Spatial;
+X_N = rmfield(X_N,'Spatial');
+X_N = tm_InterpolateTrips(X_N,interval,verbose);
 
-PointList_reduced = RDPKernel([X,Y], 'AUTO', verbose); axis square
-title('Simplify trips using RDP')
-X_re = PointList_reduced(:,1);
-Y_re = PointList_reduced(:,2);
+%% Extract features form the driver of interest trips' batch (positive examples)
+%
+X_P  = positive_sample;
+X_P.Dataset = X_P.Spatial;
+X_P = rmfield(X_P,'Spatial');
+X_P = tm_InterpolateTrips(X_P,interval,verbose);
 
-%% Step 2: Trip interpolation
-% We divide the trip to have equally steps intervals utilizing linear
-% interpulations.
-step_size = 50; % In meters
-dx = diff(X_re);
-dy = diff(Y_re);
-total_length = sum(sqrt(dx.*dx+dy.*dy));
+%% Sanity Check
+%
+% figure
+% plotAXA('trajectories',X_P,[2,7,38,41])
+% set(gcf, 'units','normalized','outerposition',[0 0 1 1]);
 
-figure
-P = interparc(linspace(0,1,ceil(total_length/step_size)),X_re,Y_re,'linear');
-X_step = P(:,1);
-Y_step = P(:,2);
-plot(X,Y,X_step,Y_step,'ro'), axis square
-title('Trip interpolation')
+
 %% Step 3: Represent trips as sets using k-shingles
 % Define a k-shingle for a trip to be any successive points with lag k
 % found within the trip. Then, we may associate with each trip the set of
@@ -53,7 +49,9 @@ title('Trip interpolation')
 % 3.1. Choosing the number of angles bins
 % We need to setup the number of angle bins to use and to set each
 % angle bin range. Assume we make equily spaced b partitions in [-pi,pi].
-%
+X_P = tm_ConstructShingles(X_P,stride,verbose);
+X_N = tm_ConstructShingles(X_N,stride,verbose);
+
 % 3.2. Choosing the shingle Size
 % We can pick k to be any constant we like. However, if we pick k too
 % small, then we would expect most sequences of k angles to appear in
@@ -63,36 +61,28 @@ title('Trip interpolation')
 % Suppose we have b different angles, not all angles appear with equal
 % probability. Zeros dominate, while obtuse and reflex angles are rare.
 %
-step_size = 50; % In meters
-shingle_size = 12; % diff lag size
-NumBind = 80; % Number of angles tokens
-UseSignedOrientation = false; % Selection of orientation values
-X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
-X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
-F_N = bindShingles(X_N,NumBind,UseSignedOrientation);
-F_P = bindShingles(X_P,NumBind,UseSignedOrientation);
+F_N = tm_BindShingles(X_N,NumBind,false,verbose);
+F_P = tm_BindShingles(X_P,NumBind,false,verbose);
 X = [F_N;F_P];
 % TF-IDF Weighting
 % X = transpose(tfidf2(X'));
 
 %% Step 4: Grid search for trip matching parameters
 %
-step_size = 50; % In meters
-M = 10; % Number of different angle token sizes
-N = 10; % Number of different shingle sizes
-K = 5; % Number of folds for CV
-UseSignedOrientation = false; % Selection of orientation values
-shingle_size = ceil(linspace(5,50,N)); % diff lag size
-NumBind = ceil(linspace(10,100,M));
+M = 1; % Number of different angle token sizes
+N = 1; % Number of different shingle sizes
+K = 10; % Number of folds for CV
+stride  = ceil(linspace(10,10,N)); % diff lag size
+NumBind = ceil(linspace(100,100,M));
 AUC_Per = zeros(M,N,K);
 
-parfor_progress(N); % Initialize progress monitor
+parfor_progress(N*M); % Initialize progress monitor
 for n=1:N
-    X_N = getSpatialMeasurements(negative_sample,step_size,shingle_size(n),false);
-    X_P = getSpatialMeasurements(positive_sample,step_size,shingle_size(n),false);
+    X_Ps = tm_ConstructShingles(X_P,stride(n));
+    X_Ns = tm_ConstructShingles(X_N,stride(n));
     for m=1:M
-        F_P = bindShingles(X_P,NumBind(m),UseSignedOrientation);
-        F_N = bindShingles(X_N,NumBind(m),UseSignedOrientation);
+        F_P = tm_BindShingles(X_Ps,NumBind(m),false);
+        F_N = tm_BindShingles(X_Ns,NumBind(m),false);
         Npos = size(F_P,1);
         Nneg = size(F_N,1);
         X = [F_P;F_N];
@@ -102,8 +92,8 @@ for n=1:N
         rng(2015); % Set seed number
         [~,AUC_Per(m,n,1:K)] = cvModel(X,labels,K,false); % Evaluate Model
         clear F_N F_P X
+        parfor_progress;
     end
-    parfor_progress;
 end
 parfor_progress(0); % Clean up progress monitor
 
@@ -113,9 +103,10 @@ AUC_Mean = mean(AUC_Per,3);
 imagesc(AUC_Mean)
 set(gca,...
     'YTick', 1:M, 'YTickLabel', NumBind,...
-    'XTick', 1:N, 'XTickLabel', shingle_size)
-ylabel('Number of differend angle token sizes')
-xlabel('Number of differend shingle sizes')
+    'XTick', 1:N, 'XTickLabel', stride)
+ylabel('Angles Bins')
+xlabel('Strides')
+set(gcf, 'units','normalized','outerposition',[0 0 1 1]);
 
 % %% Step 5: SVD
 % %
@@ -133,7 +124,7 @@ xlabel('Number of differend shingle sizes')
 % [U,S,V] = svd(X,'econ')
 % labels = [zeros(Nneg,1);ones(Npos,1)];
 % AUC_Mean = []; AUC_Var =[];
-% 
+%
 % parfor_progress(NumBind-1); % Initialize progress monitor
 % for k=NumBind-1:-1:1
 %     rng(2015); % Set seed number
@@ -141,6 +132,6 @@ xlabel('Number of differend shingle sizes')
 %     parfor_progress;
 % end
 % parfor_progress(0); % Clean up progress monitor
-% 
+%
 % figure
 % plot(NumBind-1:-1:1,AUC_Mean)

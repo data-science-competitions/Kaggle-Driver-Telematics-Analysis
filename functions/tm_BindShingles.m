@@ -1,4 +1,4 @@
-function [shingle_matrix] = bindShingles(trip_structure,NumBind,UseSignedOrientation,verbose)
+function [shingle_matrix] = tm_BindShingles(trip_structure,NumBind,UseSignedOrientation,verbose)
 %bindShingles bind angle vector into bins.
 %   INPUT:
 %   trip_struct; A structure created by getSpatialMeasurements
@@ -19,7 +19,7 @@ tic
 
 for k=1:K
     phi = single((trip_structure.Dataset{1,k}(:,'Shingles')));
-    shingle_matrix(k,:) = bindShinglesKernel(phi,NumBind,UseSignedOrientation);
+    shingle_matrix(k,:) = tm_BindShinglesKernel(phi,NumBind,UseSignedOrientation);
     if (verbose && (k==1)) fprintf('\n'); end
     if (verbose && (mod(k,10)==0)) fprintf('.'); end
     if (verbose && (mod(k,100)==0)) fprintf('%4d',k); end

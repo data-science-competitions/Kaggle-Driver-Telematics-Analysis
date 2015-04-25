@@ -1,4 +1,4 @@
-function [shingle_count] = bindShinglesKernel(phi,NumBind,UseSignedOrientation)
+function [shingle_count] = tm_BindShinglesKernel(phi,NumBind,UseSignedOrientation)
 %bindShinglesKernel bind angle vector into bins.
 %   INPUT:
 %   phi; A vector of angles (in rad)

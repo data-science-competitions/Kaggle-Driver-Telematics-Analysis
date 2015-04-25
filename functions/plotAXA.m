@@ -168,7 +168,10 @@ for k = 1:Ntrips
     title(['Trip #',num2str(ind)]);
     %%% Plot Trip Trajectory
     subplot(m,n,2*k)
-    gscatter(X,Y,HoG_Labels,cmap,'.');
+    for c=1:length(X)-1
+        plot([X(c),X(c+1)],[Y(c),Y(c+1)],'Color',cmap(HoG_Labels(c+1),:));
+        hold on
+    end
     legend('off')
     
     title(['Trip #',num2str(ind)]); axis square
