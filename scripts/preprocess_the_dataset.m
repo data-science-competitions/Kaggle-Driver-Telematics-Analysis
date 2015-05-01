@@ -16,10 +16,6 @@ destPath   = 'D:/Driver-Telematics-Analysis-Processed';
 % destPath   = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis-Processed';
 if(exist(destPath,'dir')==0) mkdir(destPath); end
 Nparts = 32;
-% Trip matching parmeters
-step_size = 50; % In meters
-shingle_size = 12; % diff lag size
-NumBind = 80; % Number of angles tokens
 
 %% Data Pre-Preocessing
 % Open parallel pool
@@ -49,7 +45,7 @@ parfor k=1:Nparts
     % Get telematic measurements
     X1 = getTelematicMeasurements(trips_structure,false);
     % Get spatial measurements
-    X2 = getSpatialMeasurements(trips_structure,step_size,shingle_size);
+    X2 = getSpatialMeasurements(trips_structure,false);
     % Combine measurements
     trips_structure = X1;
     trips_structure.Spatial = X2.Dataset;

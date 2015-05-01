@@ -21,18 +21,23 @@ for k = 1:K
     %% Load Variables
     X = single(trip_struct.Dataset{1,k}(:,'X'));
     Y = single(trip_struct.Dataset{1,k}(:,'Y'));
+    phi = atan2(Y,X);
+    angle = [0;atan2(diff(Y),diff(X))];
     %% Feature 1: Sum of Angles Shift of the Trip
-    Misc_Features(k,1) = sum([0;diff(atan2(Y,X))]);
-    %% Feature 2: Number of Steps
-    Misc_Features(k,2) = length(X);
+    Misc_Features(k,1) = sum(abs([0;diff(phi)]));
+    Misc_Features(k,2) = sum(abs([0;angle]));
     %% Feature 3: Total Trip Distance
     Distance = cumsum([0;sqrt(diff(X).^2+diff(Y).^2)]);
     Misc_Features(k,3) = Distance(end);
     %% Feature 4: Number of Steps/Total Trip Distance
-    Misc_Features(k,4) = Misc_Features(k,2)./length(X);
+    Misc_Features(k,4) = length(X)./Misc_Features(k,3);
     %% Feature 5: Centroid mean
     Misc_Features(k,5) = (1/length(X))*sum(X);
-     
+    %% Feature 6: Angle Variance 
+    Misc_Features(k,6) = var(phi);
+    %% Feature 7: Last Coordinate Record
+    Misc_Features(k,7:8) = [X(end),Y(end)];
+    
     %% Status
     if (verbose && (k==1)) fprintf('\n'); end
     if (verbose && (mod(k,10)==0)) fprintf('.'); end

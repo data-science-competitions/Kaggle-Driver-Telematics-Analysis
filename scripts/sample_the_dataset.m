@@ -23,10 +23,6 @@ dirName = 'D:/Driver-Telematics-Analysis';
 % dirName = 'C:/Dropbox/Datasets/Driver-Telematics-Analysis';
 fileList = getAllFiles(dirName,verbose);
 K = length(fileList);
-% Trip matching parmeters
-step_size = 50; % In meters
-shingle_size = 12; % diff lag size
-NumBind = 80; % Number of angles tokens
 
 %%%
 % Example: Read an arbitrary trip using importSingleTrip
@@ -49,7 +45,7 @@ positive_sample = importTripsFromFileList(psfl,verbose);
 % Get telematic measurements
 X1 = getTelematicMeasurements(positive_sample,verbose);
 % Get spatial measurements
-X2 = getSpatialMeasurements(positive_sample,step_size,shingle_size,verbose);
+X2 = getSpatialMeasurements(positive_sample,verbose);
 % Combine measurements
 positive_sample = X1;
 positive_sample.Spatial = X2.Dataset;
@@ -65,7 +61,7 @@ negative_sample = importTripsFromFileList(nsfl,verbose);
 % Get telematic measurements
 X1 = getTelematicMeasurements(negative_sample,verbose);
 % Get spatial measurements
-X2 = getSpatialMeasurements(negative_sample,step_size,shingle_size,verbose);
+X2 = getSpatialMeasurements(negative_sample,verbose);
 % Combine measurements
 negative_sample = X1;
 negative_sample.Spatial = X2.Dataset;

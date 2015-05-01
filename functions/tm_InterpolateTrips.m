@@ -76,7 +76,7 @@ function [pt,dudt,fofthandle] = interparc(t,px,py,varargin)
 %        method may be any of 'linear', 'spline', or 'pchip',
 %        or any simple contraction thereof, such as 'lin',
 %        'sp', or even 'p'.
-%        
+%
 %        method == 'linear' --> Uses a linear chordal
 %               approximation to interpolate the curve.
 %               This method is the most efficient.
@@ -94,7 +94,7 @@ function [pt,dudt,fofthandle] = interparc(t,px,py,varargin)
 %               allow a periodic spline fit for closed curves.
 %               ONLY use this method if your points should
 %               represent a closed curve.
-%               
+%
 %               If the last point is NOT the same as the
 %               first point on the curve, then the curve
 %               will be forced to be periodic by this option.
@@ -195,18 +195,18 @@ function [pt,dudt,fofthandle] = interparc(t,px,py,varargin)
 
 % unpack the arguments and check for errors
 if nargin < 3
-  error('ARCLENGTH:insufficientarguments', ...
-    'at least t, px, and py must be supplied')
+    error('ARCLENGTH:insufficientarguments', ...
+        'at least t, px, and py must be supplied')
 end
 
 t = t(:);
 if (numel(t) == 1) && (t > 1) && (rem(t,1) == 0)
-  % t specifies the number of points to be generated
-  % equally spaced in arclength
-  t = linspace(0,1,t)';
+    % t specifies the number of points to be generated
+    % equally spaced in arclength
+    t = linspace(0,1,t)';
 elseif any(t < 0) || any(t > 1)
-  error('ARCLENGTH:impropert', ...
-    'All elements of t must be 0 <= t <= 1')
+    error('ARCLENGTH:impropert', ...
+        'All elements of t must be 0 <= t <= 1')
 end
 
 % how many points will be interpolated?
@@ -219,11 +219,11 @@ n = numel(px);
 
 % are px and py both vectors of the same length?
 if ~isvector(px) || ~isvector(py) || (length(py) ~= n)
-  error('ARCLENGTH:improperpxorpy', ...
-    'px and py must be vectors of the same length')
+    error('ARCLENGTH:improperpxorpy', ...
+        'px and py must be vectors of the same length')
 elseif n < 2
-  error('ARCLENGTH:improperpxorpy', ...
-    'px and py must be vectors of length at least 2')
+    error('ARCLENGTH:improperpxorpy', ...
+        'px and py must be vectors of length at least 2')
 end
 
 % compose px and py into a single array. this way,
@@ -237,52 +237,52 @@ method = 'spline';
 
 % are there any other arguments?
 if nargin > 3
-  % there are. check the last argument. Is it a string?
-  if ischar(varargin{end})
-    method = varargin{end};
-    varargin(end) = [];
+    % there are. check the last argument. Is it a string?
+    if ischar(varargin{end})
+        method = varargin{end};
+        varargin(end) = [];
+        
+        % method may be any of {'linear', 'pchip', 'spline', 'csape'.}
+        % any any simple contraction thereof.
+        valid = {'linear', 'pchip', 'spline', 'csape'};
+        [method,errstr] = validstring(method,valid);
+        if ~isempty(errstr)
+            error('INTERPARC:incorrectmethod',errstr)
+        end
+    end
     
-    % method may be any of {'linear', 'pchip', 'spline', 'csape'.}
-    % any any simple contraction thereof.
-    valid = {'linear', 'pchip', 'spline', 'csape'};
-    [method,errstr] = validstring(method,valid);
-    if ~isempty(errstr)
-      error('INTERPARC:incorrectmethod',errstr)
+    % anything that remains in varargin must add
+    % an additional dimension on the curve/polygon
+    for i = 1:numel(varargin)
+        pz = varargin{i};
+        pz = pz(:);
+        if numel(pz) ~= n
+            error('ARCLENGTH:improperpxorpy', ...
+                'pz must be of the same size as px and py')
+        end
+        pxy = [pxy,pz]; %#ok
     end
-  end
-  
-  % anything that remains in varargin must add
-  % an additional dimension on the curve/polygon
-  for i = 1:numel(varargin)
-    pz = varargin{i};
-    pz = pz(:);
-    if numel(pz) ~= n
-      error('ARCLENGTH:improperpxorpy', ...
-        'pz must be of the same size as px and py')
-    end
-    pxy = [pxy,pz]; %#ok
-  end
-  
-  % the final number of dimensions provided
-  ndim = size(pxy,2);
+    
+    % the final number of dimensions provided
+    ndim = size(pxy,2);
 end
 
 % if csape, then make sure the first point is replicated at the end.
 % also test to see if csape is available
 if method(1) == 'c'
-  if exist('csape','file') == 0
-    error('CSAPE was requested, but you lack the necessary toolbox.')
-  end
-  
-  p1 = pxy(1,:);
-  pend = pxy(end,:);
-  
-  % get a tolerance on whether the first point is replicated.
-  if norm(p1 - pend) > 10*eps(norm(max(abs(pxy),[],1)))
-    % the two end points were not identical, so wrap the curve
-    pxy(end+1,:) = p1;
-    nt = nt + 1;
-  end
+    if exist('csape','file') == 0
+        error('CSAPE was requested, but you lack the necessary toolbox.')
+    end
+    
+    p1 = pxy(1,:);
+    pend = pxy(end,:);
+    
+    % get a tolerance on whether the first point is replicated.
+    if norm(p1 - pend) > 10*eps(norm(max(abs(pxy),[],1)))
+        % the two end points were not identical, so wrap the curve
+        pxy(end+1,:) = p1;
+        nt = nt + 1;
+    end
 end
 
 % preallocate the result, pt
@@ -301,41 +301,41 @@ cumarc = [0;cumsum(chordlen)];
 
 % The linear interpolant is trivial. do it as a special case
 if method(1) == 'l'
-  % The linear method.
-  
-  % which interval did each point fall in, in
-  % terms of t?
-  [junk,tbins] = histc(t,cumarc); %#ok
-  
-  % catch any problems at the ends
-  tbins((tbins <= 0) | (t <= 0)) = 1;
-  tbins((tbins >= n) | (t >= 1)) = n - 1;
-  
-  % interpolate
-  s = (t - cumarc(tbins))./chordlen(tbins);
-  % be nice, and allow the code to work on older releases
-  % that don't have bsxfun
-  pt = pxy(tbins,:) + (pxy(tbins+1,:) - pxy(tbins,:)).*repmat(s,1,ndim);
-  
-  % do we need to compute derivatives here?
-  if nargout > 1
-    dudt = (pxy(tbins+1,:) - pxy(tbins,:))./repmat(chordlen(tbins),1,ndim);
-  end
-  
-  % do we need to create the spline as a piecewise linear function?
-  if nargout > 2
-    spl = cell(1,ndim);
-    for i = 1:ndim
-      coefs = [diff(pxy(:,i))./diff(cumarc),pxy(1:(end-1),i)];
-      spl{i} = mkpp(cumarc.',coefs);
+    % The linear method.
+    
+    % which interval did each point fall in, in
+    % terms of t?
+    [junk,tbins] = histc(t,cumarc); %#ok
+    
+    % catch any problems at the ends
+    tbins((tbins <= 0) | (t <= 0)) = 1;
+    tbins((tbins >= n) | (t >= 1)) = n - 1;
+    
+    % interpolate
+    s = (t - cumarc(tbins))./chordlen(tbins);
+    % be nice, and allow the code to work on older releases
+    % that don't have bsxfun
+    pt = pxy(tbins,:) + (pxy(tbins+1,:) - pxy(tbins,:)).*repmat(s,1,ndim);
+    
+    % do we need to compute derivatives here?
+    if nargout > 1
+        dudt = (pxy(tbins+1,:) - pxy(tbins,:))./repmat(chordlen(tbins),1,ndim);
     end
     
-    %create a function handle for evaluation, passing in the splines
-    fofthandle = @(t) foft(t,spl);
-  end
-  
-  % we are done at this point
-  return
+    % do we need to create the spline as a piecewise linear function?
+    if nargout > 2
+        spl = cell(1,ndim);
+        for i = 1:ndim
+            coefs = [diff(pxy(:,i))./diff(cumarc),pxy(1:(end-1),i)];
+            spl{i} = mkpp(cumarc.',coefs);
+        end
+        
+        %create a function handle for evaluation, passing in the splines
+        fofthandle = @(t) foft(t,spl);
+    end
+    
+    % we are done at this point
+    return
 end
 
 % If we drop down to here, we have either a spline
@@ -346,34 +346,34 @@ spl = cell(1,ndim);
 spld = spl;
 diffarray = [3 0 0;0 2 0;0 0 1;0 0 0];
 for i = 1:ndim
-  switch method
-    case 'pchip'
-      spl{i} = pchip(cumarc,pxy(:,i));
-    case 'spline'
-      spl{i} = spline(cumarc,pxy(:,i));
-      nc = numel(spl{i}.coefs);
-      if nc < 4
-        % just pretend it has cubic segments
-        spl{i}.coefs = [zeros(1,4-nc),spl{i}.coefs];
-        spl{i}.order = 4;
-      end
-    case 'csape'
-      % csape was specified, so the curve is presumed closed,
-      % therefore periodic
-      spl{i} = csape(cumarc,pxy(:,i),'periodic');
-      nc = numel(spl{i}.coefs);
-      if nc < 4
-        % just pretend it has cubic segments
-        spl{i}.coefs = [zeros(1,4-nc),spl{i}.coefs];
-        spl{i}.order = 4;
-      end
-  end
-  
-  % and now differentiate them
-  xp = spl{i};
-  xp.coefs = xp.coefs*diffarray;
-  xp.order = 3;
-  spld{i} = xp;
+    switch method
+        case 'pchip'
+            spl{i} = pchip(cumarc,pxy(:,i));
+        case 'spline'
+            spl{i} = spline(cumarc,pxy(:,i));
+            nc = numel(spl{i}.coefs);
+            if nc < 4
+                % just pretend it has cubic segments
+                spl{i}.coefs = [zeros(1,4-nc),spl{i}.coefs];
+                spl{i}.order = 4;
+            end
+        case 'csape'
+            % csape was specified, so the curve is presumed closed,
+            % therefore periodic
+            spl{i} = csape(cumarc,pxy(:,i),'periodic');
+            nc = numel(spl{i}.coefs);
+            if nc < 4
+                % just pretend it has cubic segments
+                spl{i}.coefs = [zeros(1,4-nc),spl{i}.coefs];
+                spl{i}.order = 4;
+            end
+    end
+    
+    % and now differentiate them
+    xp = spl{i};
+    xp.coefs = xp.coefs*diffarray;
+    xp.order = 3;
+    spld{i} = xp;
 end
 
 % catch the case where there were exactly three points
@@ -381,9 +381,9 @@ end
 % interpolant. In this case, spline creates a curve with
 % only one piece, not two.
 if (numel(cumarc) == 3) && (method(1) == 's')
-  cumarc = spl{1}.breaks;
-  n = numel(cumarc);
-  chordlen = sum(chordlen);
+    cumarc = spl{1}.breaks;
+    n = numel(cumarc);
+    chordlen = sum(chordlen);
 end
 
 % Generate the total arclength along the curve
@@ -399,18 +399,18 @@ seglen = zeros(n-1,1);
 % options for ode45
 opts = odeset('reltol',1.e-9);
 for i = 1:spl{1}.pieces
-  % extract polynomials for the derivatives
-  for j = 1:ndim
-    polyarray(j,:) = spld{j}.coefs(i,:);
-  end
-  
-  % integrate the arclength for the i'th segment
-  % using ode45 for the integral. I could have
-  % done this part with quad too, but then it
-  % would not have been perfectly (numerically)
-  % consistent with the next operation in this tool.
-  [tout,yout] = ode45(@(t,y) segkernel(t,y),[0,chordlen(i)],0,opts); %#ok
-  seglen(i) = yout(end);
+    % extract polynomials for the derivatives
+    for j = 1:ndim
+        polyarray(j,:) = spld{j}.coefs(i,:);
+    end
+    
+    % integrate the arclength for the i'th segment
+    % using ode45 for the integral. I could have
+    % done this part with quad too, but then it
+    % would not have been perfectly (numerically)
+    % consistent with the next operation in this tool.
+    [tout,yout] = ode45(@(t,y) segkernel(t,y),[0,chordlen(i)],0,opts); %#ok
+    seglen(i) = yout(end);
 end
 
 % and normalize the segments to have unit total length
@@ -442,84 +442,84 @@ opts = odeset('reltol',1.e-9,'events',@ode_events);
 
 ti = t;
 for i = 1:nt
-  % si is the piece of arc length that we will look
-  % for in this spline segment.
-  si = s(i) - cumseglen(tbins(i));
-  
-  % extract polynomials for the derivatives
-  % in the interval the point lies in
-  for j = 1:ndim
-    polyarray(j,:) = spld{j}.coefs(tbins(i),:);
-  end
-  
-  % we need to integrate in t, until the integral
-  % crosses the specified value of si. Because we
-  % have defined totalsplinelength, the lengths will
-  % be normalized at this point to a unit length.
-  %
-  % Start the ode solver at -si, so we will just
-  % look for an event where y crosses zero.
-  [tout,yout,te,ye] = ode45(@(t,y) segkernel(t,y),[0,chordlen(tbins(i))],-si,opts); %#ok
-  
-  % we only need that point where a zero crossing occurred
-  % if no crossing was found, then we can look at each end.
-  if ~isempty(te)
-    ti(i) = te(1) + cumarc(tbins(i));
-  else
-    % a crossing must have happened at the very
-    % beginning or the end, and the ode solver
-    % missed it, not trapping that event.
-    if abs(yout(1)) < abs(yout(end))
-      % the event must have been at the start.
-      ti(i) = tout(1) + cumarc(tbins(i));
-    else
-      % the event must have been at the end.
-      ti(i) = tout(end) + cumarc(tbins(i));
+    % si is the piece of arc length that we will look
+    % for in this spline segment.
+    si = s(i) - cumseglen(tbins(i));
+    
+    % extract polynomials for the derivatives
+    % in the interval the point lies in
+    for j = 1:ndim
+        polyarray(j,:) = spld{j}.coefs(tbins(i),:);
     end
-  end
+    
+    % we need to integrate in t, until the integral
+    % crosses the specified value of si. Because we
+    % have defined totalsplinelength, the lengths will
+    % be normalized at this point to a unit length.
+    %
+    % Start the ode solver at -si, so we will just
+    % look for an event where y crosses zero.
+    [tout,yout,te,ye] = ode45(@(t,y) segkernel(t,y),[0,chordlen(tbins(i))],-si,opts); %#ok
+    
+    % we only need that point where a zero crossing occurred
+    % if no crossing was found, then we can look at each end.
+    if ~isempty(te)
+        ti(i) = te(1) + cumarc(tbins(i));
+    else
+        % a crossing must have happened at the very
+        % beginning or the end, and the ode solver
+        % missed it, not trapping that event.
+        if abs(yout(1)) < abs(yout(end))
+            % the event must have been at the start.
+            ti(i) = tout(1) + cumarc(tbins(i));
+        else
+            % the event must have been at the end.
+            ti(i) = tout(end) + cumarc(tbins(i));
+        end
+    end
 end
 
 % Interpolate the parametric splines at ti to get
 % our interpolated value.
 for L = 1:ndim
-  pt(:,L) = ppval(spl{L},ti);
+    pt(:,L) = ppval(spl{L},ti);
 end
 
 % do we need to compute first derivatives here at each point?
 if nargout > 1
-  dudt = zeros(nt,ndim);
-  for L = 1:ndim
-    dudt(:,L) = ppval(spld{L},ti);
-  end
+    dudt = zeros(nt,ndim);
+    for L = 1:ndim
+        dudt(:,L) = ppval(spld{L},ti);
+    end
 end
 
 % create a function handle for evaluation, passing in the splines
 if nargout > 2
-  fofthandle = @(t) foft(t,spl);
+    fofthandle = @(t) foft(t,spl);
 end
 
 % ===============================================
 %  nested function for the integration kernel
 % ===============================================
-  function val = segkernel(t,y) %#ok
-    % sqrt((dx/dt)^2 + (dy/dt)^2 + ...)
-    val = zeros(size(t));
-    for k = 1:ndim
-      val = val + polyval(polyarray(k,:),t).^2;
-    end
-    val = sqrt(val);
-    
-  end % function segkernel
+    function val = segkernel(t,y) %#ok
+        % sqrt((dx/dt)^2 + (dy/dt)^2 + ...)
+        val = zeros(size(t));
+        for k = 1:ndim
+            val = val + polyval(polyarray(k,:),t).^2;
+        end
+        val = sqrt(val);
+        
+    end % function segkernel
 
 % ===============================================
 %  nested function for ode45 integration events
 % ===============================================
-  function [value,isterminal,direction] = ode_events(t,y) %#ok
-    % ode event trap, looking for zero crossings of y.
-    value = y;
-    isterminal = ones(size(y));
-    direction = ones(size(y));
-  end % function ode_events
+    function [value,isterminal,direction] = ode_events(t,y) %#ok
+        % ode event trap, looking for zero crossings of y.
+        value = y;
+        isterminal = ones(size(y));
+        direction = ones(size(y));
+    end % function ode_events
 
 end % mainline - interparc
 
@@ -543,7 +543,7 @@ t = max(0,min(1,t(:)));
 
 % just loop over the splines in the cell array of splines
 for i = 1:pdim
-  f_t(:,i) = ppval(spl{i},t);
+    f_t(:,i) = ppval(spl{i},t);
 end
 end % function foft
 
@@ -573,17 +573,17 @@ function [str,errorclass] = validstring(arg,valid)
 %        ''  --> No error. An unambiguous match for arg
 %                was found among the choices.
 %
-%        'No match found' --> No match was found among 
+%        'No match found' --> No match was found among
 %                the choices provided in valid.
 %
 %        'Ambiguous argument' --> At least two ambiguous
 %                matches were found among those provided
 %                in valid.
-%        
+%
 %
 % Example:
 %  valid = {'off' 'on' 'The sky is falling'}
-%  
+%
 %
 % See also: parse_pv_pairs, strmatch, strcmpi
 %
@@ -594,17 +594,17 @@ function [str,errorclass] = validstring(arg,valid)
 
 ind = find(strncmpi(lower(arg),valid,numel(arg)));
 if isempty(ind)
-  % No hit found
-  errorclass = 'No match found';
-  str = '';
+    % No hit found
+    errorclass = 'No match found';
+    str = '';
 elseif (length(ind) > 1)
-  % Ambiguous arg, hitting more than one of the valid options
-  errorclass = 'Ambiguous argument';
-  str = '';
-  return
+    % Ambiguous arg, hitting more than one of the valid options
+    errorclass = 'Ambiguous argument';
+    str = '';
+    return
 else
-  errorclass = '';
-  str = valid{ind};
+    errorclass = '';
+    str = valid{ind};
 end
 
 end % function validstring
