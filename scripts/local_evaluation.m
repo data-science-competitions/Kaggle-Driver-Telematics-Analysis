@@ -1,7 +1,7 @@
 %% Local Evaluation
 % author: Harel Lustiger
 %
-% This script is contains a frame work to evaluate model AUC performance
+% This script contains a frame work to evaluate model AUC performance
 % utilizing K-fold cross validation:
 %
 
